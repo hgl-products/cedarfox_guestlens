@@ -1,0 +1,8 @@
+{
+  "actorSpecification": 1,
+  "name": "supabase-yelp-writer",
+  "title": "Supabase Yelp Review Writer",
+  "description": "Reads Yelp review data from an Apify dataset and inserts new rows into the client's Supabase reviews table (ON CONFLICT DO NOTHING dedup).",
+  "version": "0.1",
+  "buildTag": "latest"
+}

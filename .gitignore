@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# Local previews and scratch
+index_preview.html
+
+# Client roster CSVs contain personal data — never commit
+*.csv
+
+# NOTE: .staticrypt.json (the salt) IS committed on purpose — it keeps
+# "remember me" sessions valid across rebuilds. It contains no secret.

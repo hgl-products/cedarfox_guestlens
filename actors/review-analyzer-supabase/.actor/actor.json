@@ -1,0 +1,8 @@
+{
+  "actorSpecification": 1,
+  "name": "review-analyzer-supabase",
+  "title": "Review Analyzer (Supabase)",
+  "description": "Analyzes unprocessed reviews in the client's Supabase project with Claude, writes 17-field analysis rows, and marks reviews processed.",
+  "version": "0.1",
+  "buildTag": "latest"
+}

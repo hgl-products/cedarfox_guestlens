@@ -1,0 +1,8 @@
+{
+  "actorSpecification": 1,
+  "name": "supabase-tripadvisor-writer",
+  "title": "Supabase TripAdvisor Review Writer",
+  "description": "Reads TripAdvisor review data from an Apify dataset and inserts new rows into the client's Supabase reviews table (ON CONFLICT DO NOTHING dedup).",
+  "version": "0.1",
+  "buildTag": "latest"
+}

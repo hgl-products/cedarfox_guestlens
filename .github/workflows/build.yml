@@ -1,0 +1,67 @@
+name: Rebuild GuestLens Dashboard
+
+on:
+  schedule:
+    # Cedar Fox is in Sarasota (US Eastern, same as TBC) — Apify pipeline:
+    # scrapers 18:00 → writers 18:20–18:35 → analyzer 18:45 ET. GitHub crons are
+    # UTC (no DST) and can be delayed/dropped, so we fire three times; the commit
+    # step skips when index.html is unchanged, so extras are free.
+    - cron: '15 23 * * *'   # 7:15 PM EDT (6:15 PM EST — harmless early skip in winter)
+    - cron: '5 0 * * *'     # 8:05 PM EDT / 7:05 PM EST — the winter primary
+    - cron: '37 1 * * *'    # 9:37 PM EDT / 8:37 PM EST — late safety net
+  workflow_dispatch:
+    # Adds a "Run workflow" button in the GitHub Actions UI for manual rebuilds
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit and push index.html back to the repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Build dashboard
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python build_v3.py
+
+      # Pilot runs WITHOUT password protection (owner demo). To enable later:
+      # add a DASHBOARD_PASSWORD repo secret, uncomment this step, and add
+      # .staticrypt.json to the git add below (fresh salt generates on first run).
+      #
+      # - name: Encrypt dashboard (password protection)
+      #   env:
+      #     STATICRYPT_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+      #   run: |
+      #     npx --yes staticrypt index.html -d . --short \
+      #       --remember 30 \
+      #       --template password_template.html \
+      #       --template-title "GuestLens · Cedar Fox Coffee" \
+      #       --template-instructions "Enter the access password to open your dashboard." \
+      #       --template-button "Open GuestLens" \
+      #       --template-error "That password didn't work — check it and try again." \
+      #       --template-placeholder "Access password"
+
+      - name: Commit and push updated dashboard
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          # Only commit if the output actually changed
+          if git diff --staged --quiet; then
+            echo "No changes to index.html — skipping commit."
+          else
+            git commit -m "chore: rebuild GuestLens $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GuestLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh;transition:background .3s,color .3s}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+ul{list-style:none}
+a{color:inherit}
+svg{display:block}
+
+/* ───────────────────────── TOKENS ───────────────────────── */
+:root{
+  --bg:#faf7f2; --card:#fffdf9; --card-2:#f6f1e9;
+  --ink:#1c1917; --ink-2:#57534e; --ink-3:#a09a90;
+  --hair:#e9e2d8; --hair-2:#f0eae1;
+  --accent:#c2410c; --accent-soft:#fbe9de; --accent-grad:linear-gradient(135deg,#f59e0b,#ea580c);
+  --brand-grad:linear-gradient(135deg,#38bdf8,#0284c7); --brand-shadow:rgba(2,132,199,.28);
+  --good:#0ca30c; --good-text:#006300; --good-soft:#e3f5e3;
+  --warn:#fab219; --warn-soft:#fdf3d9;
+  --serious:#ec835a; --serious-soft:#fcebe3;
+  --crit:#d03b3b; --crit-text:#b32020; --crit-soft:#fae3e3;
+  --neutral-mid:#f0efec;
+  --s1:#eb6834; --s2:#2a78d6; --s3:#1baf7a; --s4:#4a3aa7;
+  --s5:#eda100; --s6:#e34948; --s7:#e87ba4; --s8:#008300;
+  --shadow:0 1px 2px rgba(28,25,23,.04),0 8px 28px rgba(120,80,40,.07);
+  --shadow-hover:0 2px 4px rgba(28,25,23,.05),0 14px 40px rgba(120,80,40,.13);
+  --radius:18px; --radius-sm:12px; --radius-xs:8px;
+  --logo-filter:none;
+}
+[data-theme="dark"]{
+  --bg:#14110e; --card:#211d19; --card-2:#2a2520;
+  --ink:#f5f0ea; --ink-2:#c7bfb4; --ink-3:#8a8378;
+  --hair:#35302a; --hair-2:#2c2823;
+  --accent:#f97316; --accent-soft:#3a2417; --accent-grad:linear-gradient(135deg,#b45309,#c2410c);
+  --brand-grad:linear-gradient(135deg,#0ea5e9,#075985); --brand-shadow:rgba(3,105,161,.45);
+  --good:#0ca30c; --good-text:#4ade80; --good-soft:#12210f;
+  --warn:#fab219; --warn-soft:#2c2410;
+  --serious:#ec835a; --serious-soft:#2e1c12;
+  --crit:#e05252; --crit-text:#f87171; --crit-soft:#2e1414;
+  --neutral-mid:#383835;
+  --s1:#d95926; --s2:#3987e5; --s3:#199e70; --s4:#9085e9;
+  --s5:#c98500; --s6:#e66767; --s7:#d55181; --s8:#008300;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+  --shadow-hover:0 2px 4px rgba(0,0,0,.35),0 14px 40px rgba(0,0,0,.5);
+  --logo-filter:invert(1) hue-rotate(180deg);
+}
+
+/* ───────────────────────── HEADER ───────────────────────── */
+.header{
+  position:sticky;top:0;z-index:120;height:64px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:0 28px;border-bottom:1px solid var(--hair);
+  background:color-mix(in srgb,var(--card) 82%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand-logo{height:30px;max-width:210px;object-fit:contain;filter:var(--logo-filter)}
+.brand-sep{width:1px;height:26px;background:var(--hair)}
+.brand-product{display:flex;flex-direction:column;line-height:1.15}
+.brand-product .name{font-size:14px;font-weight:800;letter-spacing:-.2px;
+  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.brand-product .tag{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+.header-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.updated{font-size:11px;color:var(--ink-3);text-align:right;line-height:1.3}
+.icon-btn{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--hair);color:var(--ink-2);transition:all .18s;background:var(--card)}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+
+/* ───────────────────────── NAV ───────────────────────── */
+.nav{
+  display:flex;gap:2px;padding:0 20px;border-bottom:1px solid var(--hair);
+  background:color-mix(in srgb,var(--card) 82%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  position:sticky;top:64px;z-index:110;overflow-x:auto;scrollbar-width:none;
+}
+.nav::-webkit-scrollbar{display:none}
+.tab-btn{
+  display:flex;align-items:center;gap:7px;padding:13px 15px 11px;
+  font-size:13px;font-weight:600;color:var(--ink-3);white-space:nowrap;
+  border-bottom:2px solid transparent;transition:color .18s,border-color .18s;
+}
+.tab-btn svg{width:16px;height:16px}
+.tab-btn:hover{color:var(--ink)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{font-size:10px;font-weight:800;background:var(--crit);color:#fff;
+  border-radius:20px;padding:1px 6px;line-height:1.4}
+
+/* ───────────────────────── FILTER ROW ───────────────────────── */
+.filters{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:12px 28px;border-bottom:1px solid var(--hair);
+  background:var(--bg);position:sticky;top:107px;z-index:100;
+}
+.seg{display:flex;gap:2px;background:var(--card-2);border:1px solid var(--hair);border-radius:12px;padding:3px}
+.seg button{padding:5px 12px;border-radius:9px;font-size:12px;font-weight:600;color:var(--ink-2);transition:all .18s}
+.seg button:hover{color:var(--ink)}
+.seg button.active{background:var(--card);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.filters .count{margin-left:auto;font-size:11.5px;color:var(--ink-3);font-weight:500}
+.filter-lbl{font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-right:2px}
+
+/* ───────────────────────── PAGES / GRID ───────────────────────── */
+.page{display:none;padding:26px 28px 60px;max-width:1440px;margin:0 auto}
+.page.active{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.page.active>*{animation:rise .45s cubic-bezier(.22,.9,.36,1) both}
+.page.active>*:nth-child(2){animation-delay:.05s}
+.page.active>*:nth-child(3){animation-delay:.1s}
+.page.active>*:nth-child(4){animation-delay:.15s}
+.page.active>*:nth-child(5){animation-delay:.2s}
+@media(prefers-reduced-motion:reduce){.page.active>*{animation:none}}
+.grid{display:grid;gap:18px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:1fr 1fr}
+.grid-21{grid-template-columns:1.7fr 1fr}
+@media(max-width:1000px){.grid-4{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.grid-4,.grid-3,.grid-2,.grid-21{grid-template-columns:1fr}.page{padding:20px 16px 60px}.header,.filters{padding-left:16px;padding-right:16px}}
+.mb{margin-bottom:18px}
+
+/* ───────────────────────── CARDS ───────────────────────── */
+.card{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:20px 22px;transition:box-shadow .25s,transform .25s}
+.card.hoverable:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:1px;
+  display:flex;align-items:center;gap:7px}
+.card-title svg{width:14px;height:14px;color:var(--accent)}
+.data-toggle{font-size:10.5px;font-weight:600;color:var(--ink-3);border:1px solid var(--hair);
+  border-radius:8px;padding:3px 9px;transition:all .18s}
+.data-toggle:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ───────────────────────── HERO ───────────────────────── */
+.hero{
+  border-radius:22px;padding:26px 30px;margin-bottom:18px;position:relative;overflow:hidden;
+  background:var(--brand-grad);color:#fff;
+  display:flex;align-items:center;gap:36px;flex-wrap:wrap;
+  box-shadow:0 14px 44px var(--brand-shadow);
+}
+.hero::after{content:'';position:absolute;right:-70px;top:-90px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.22),transparent 68%);pointer-events:none}
+.hero-main .hero-num{font-size:58px;font-weight:800;letter-spacing:-2.5px;line-height:1;display:flex;align-items:baseline;gap:8px}
+.hero-num .star{font-size:30px;letter-spacing:0;opacity:.95}
+.hero-main .hero-lbl{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;opacity:.85;margin-top:8px}
+.hero-tiles{display:flex;gap:14px;flex:1;justify-content:flex-end;flex-wrap:wrap}
+.htile{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:14px;
+  padding:12px 18px;min-width:132px;backdrop-filter:blur(4px)}
+.htile .v{font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+.htile .l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;opacity:.85;margin-top:2px}
+.delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;border-radius:20px;padding:2px 8px;vertical-align:middle}
+.delta svg{width:11px;height:11px}
+.delta.up{background:var(--good-soft);color:var(--good-text)}
+.delta.down{background:var(--crit-soft);color:var(--crit-text)}
+.delta.flat{background:var(--neutral-mid);color:var(--ink-2)}
+.hero .delta.up{background:rgba(255,255,255,.24);color:#fff}
+.hero .delta.down{background:rgba(0,0,0,.22);color:#fff}
+.hero .delta.flat{background:rgba(255,255,255,.16);color:#fff}
+
+/* ───────────────────────── STAT TILES ───────────────────────── */
+.stat{display:flex;flex-direction:column;gap:6px}
+.stat .top{display:flex;align-items:center;justify-content:space-between}
+.stat .lbl{font-size:12px;font-weight:600;color:var(--ink-2)}
+.stat .ic{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center}
+.stat .ic svg{width:16px;height:16px}
+.stat .val{font-size:30px;font-weight:800;letter-spacing:-1.2px;line-height:1.1;display:flex;align-items:center;gap:10px}
+.stat .sub{font-size:11px;color:var(--ink-3)}
+.spark{margin-top:2px}
+
+/* ───────────────────────── AI BRIEF ───────────────────────── */
+.brief{border:1px solid var(--hair);border-radius:var(--radius);box-shadow:var(--shadow);
+  background:linear-gradient(135deg,var(--accent-soft),var(--card));padding:20px 22px;margin-bottom:18px}
+.brief-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.brief-head svg{width:17px;height:17px;color:var(--accent)}
+.brief-head .t{font-size:13px;font-weight:800;color:var(--accent)}
+.brief-body{font-size:13px;color:var(--ink-2);line-height:1.75;white-space:pre-wrap;
+  max-height:150px;overflow:hidden;position:relative;transition:max-height .4s ease}
+.brief-body.open{max-height:2400px}
+.brief-body:not(.open)::after{content:'';position:absolute;inset:auto 0 0 0;height:56px;
+  background:linear-gradient(transparent,var(--card))}
+.brief-more{margin-top:8px;font-size:12px;font-weight:700;color:var(--accent)}
+
+/* ───────────────────────── PLATFORM LIST ───────────────────────── */
+.plat{display:flex;align-items:center;gap:13px;padding:13px 4px;border-bottom:1px solid var(--hair-2);
+  cursor:pointer;border-radius:8px;transition:background .15s}
+.plat:hover{background:var(--hair-2)}
+.plat:last-child{border-bottom:none}
+.plat-badge{width:38px;height:38px;border-radius:11px;color:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.plat .nm{font-weight:700;font-size:13px}
+.plat .ct{font-size:11px;color:var(--ink-3)}
+.plat .sc{font-size:21px;font-weight:800;letter-spacing:-.8px;text-align:right}
+.plat .st{color:var(--warn);font-size:11px;letter-spacing:1px;text-align:right}
+
+/* ───────────────────────── SENTIMENT DIVERGING BAR ───────────────────────── */
+.divbar{display:flex;height:34px;border-radius:10px;overflow:hidden;margin:6px 0 12px}
+.divbar .seg-s{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;
+  min-width:0;cursor:pointer;transition:filter .15s;border-right:2px solid var(--card)}
+.divbar .seg-s:last-child{border-right:none}
+.divbar .seg-s:hover{filter:brightness(1.12)}
+.legend-row{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2)}
+.legend-row .key{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.legend-row .key:hover{color:var(--ink)}
+.key .dot{width:9px;height:9px;border-radius:3px}
+
+/* ───────────────────────── THEME / URGENCY BARS ───────────────────────── */
+.hbar-item{margin-bottom:13px;cursor:pointer;border-radius:8px;padding:4px 6px;margin-left:-6px;margin-right:-6px;transition:background .15s}
+.hbar-item:hover{background:var(--hair-2)}
+.hbar-item.static{cursor:default}
+.hbar-item.static:hover{background:none}
+.hbar-head{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12.5px}
+.hbar-head .nm{font-weight:600;display:flex;align-items:center;gap:7px}
+.hbar-head .nm svg{width:14px;height:14px;color:var(--ink-3)}
+.hbar-head .pv{color:var(--ink-3);font-weight:600}
+.hbar-track{height:7px;background:var(--hair-2);border-radius:4px;overflow:hidden}
+.hbar-fill{height:100%;border-radius:4px;background:var(--accent-grad);transition:width .7s cubic-bezier(.22,.9,.36,1)}
+
+/* ───────────────────────── LOCATION CARDS ───────────────────────── */
+.loc-card{cursor:pointer;position:relative;overflow:hidden}
+.loc-card .bar-top{position:absolute;inset:0 0 auto 0;height:4px}
+.loc-card.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--shadow-hover)}
+.loc-score{font-size:38px;font-weight:800;letter-spacing:-2px;line-height:1;display:flex;align-items:baseline;gap:6px}
+.loc-score .star{font-size:19px;color:var(--warn)}
+.loc-name{font-size:13.5px;font-weight:700;margin-top:8px}
+.loc-sub{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent)}
+
+/* ───────────────────────── TABLES ───────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:10px;font-weight:700;color:var(--ink-3);text-transform:uppercase;
+  letter-spacing:1px;padding:9px 10px;border-bottom:1px solid var(--hair)}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--hair-2);font-variant-numeric:tabular-nums}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr{transition:background .12s}
+.tbl tbody tr:hover{background:var(--hair-2)}
+.tbl .num{text-align:right}
+.rank{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+  font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+
+/* ───────────────────────── BADGES / CHIPS ───────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge svg{width:10px;height:10px}
+.b-google{background:#e8f0fe;color:#1a5cc8}.b-yelp{background:#fdeaea;color:#c21f1f}.b-tripadvisor{background:#e0f5ec;color:#00754a}
+[data-theme="dark"] .b-google{background:#16233c;color:#7fabf0}
+[data-theme="dark"] .b-yelp{background:#391616;color:#ee8f8f}
+[data-theme="dark"] .b-tripadvisor{background:#12352a;color:#4fd1a1}
+.b-pos{background:var(--good-soft);color:var(--good-text)}
+.b-neg{background:var(--crit-soft);color:var(--crit-text)}
+.b-neu{background:var(--neutral-mid);color:var(--ink-2)}
+.b-mix{background:var(--serious-soft);color:var(--serious)}
+.b-urg-High,.b-urg-Critical{background:var(--crit-soft);color:var(--crit-text)}
+.b-urg-Medium{background:var(--warn-soft);color:#8f6400}
+[data-theme="dark"] .b-urg-Medium{color:var(--warn)}
+.b-staff{background:var(--accent-soft);color:var(--accent);cursor:pointer}
+
+/* ───────────────────────── ACTION CENTER ───────────────────────── */
+.action-card{border-left:4px solid var(--crit);margin-bottom:14px}
+.action-card.med{border-left-color:var(--warn)}
+.action-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.action-meta{flex:1;min-width:180px}
+.action-meta .who{font-size:13.5px;font-weight:700}
+.action-meta .when{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.action-stars{color:var(--warn);font-weight:700;font-size:14px;letter-spacing:1px}
+.action-text{font-size:13px;color:var(--ink-2);line-height:1.65;margin-bottom:12px}
+.coach{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--radius-xs);padding:12px 14px;margin-bottom:12px}
+.coach .coach-t{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.coach .coach-t svg{width:12px;height:12px}
+.coach ul{font-size:12.5px;color:var(--ink-2);line-height:1.7;padding-left:16px;list-style:disc}
+.coach .tone{font-size:12px;color:var(--ink-2)}
+.action-foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+  border-radius:10px;padding:7px 14px;transition:all .18s;border:1px solid transparent}
+.btn svg{width:13px;height:13px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-ghost{border-color:var(--hair);color:var(--ink-2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.ok-banner{display:flex;align-items:center;gap:12px;background:var(--good-soft);border:1px solid var(--good);
+  border-radius:var(--radius);padding:18px 20px;color:var(--good-text);font-weight:600;font-size:14px}
+.ok-banner svg{width:22px;height:22px;flex-shrink:0}
+
+/* ───────────────────────── STAFF ───────────────────────── */
+.podium{display:flex;align-items:center;gap:14px}
+.avatar{width:46px;height:46px;border-radius:50%;color:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800}
+.podium .medal{font-size:20px;line-height:1}
+.podium .nm{font-size:15px;font-weight:800}
+.podium .dt{font-size:11.5px;color:var(--ink-3)}
+.mention-count{margin-left:auto;text-align:right}
+.mention-count .n{font-size:26px;font-weight:800;letter-spacing:-1px;color:var(--accent)}
+.mention-count .l{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.8px}
+
+/* ───────────────────────── REVIEWS ───────────────────────── */
+.rev-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--hair);
+  border-radius:12px;padding:8px 13px;flex:1;min-width:220px;max-width:380px}
+.search-box svg{width:15px;height:15px;color:var(--ink-3);flex-shrink:0}
+.search-box input{border:none;outline:none;background:none;color:var(--ink);font-size:13px;width:100%}
+.search-box input::placeholder{color:var(--ink-3)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 13px;
+  border-radius:20px;border:1px solid var(--hair);color:var(--ink-2);background:var(--card);transition:all .15s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.removable{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip svg{width:11px;height:11px}
+.rev-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--radius-sm);
+  padding:17px 19px;margin-bottom:12px;box-shadow:var(--shadow);transition:box-shadow .2s}
+.rev-card:hover{box-shadow:var(--shadow-hover)}
+.rev-head{display:flex;align-items:flex-start;gap:12px}
+.rev-who{flex:1;min-width:0}
+.rev-who .nm{font-size:13.5px;font-weight:700}
+.rev-who .dt{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.rev-stars{color:var(--warn);font-size:13px;font-weight:700;letter-spacing:1.5px;flex-shrink:0}
+.rev-text{font-size:13px;color:var(--ink-2);line-height:1.7;margin-top:10px}
+.rev-text.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.rev-more{font-size:11.5px;color:var(--accent);font-weight:700;margin-top:4px}
+.rev-ai{margin-top:11px;padding:11px 13px;background:var(--accent-soft);border-radius:var(--radius-xs);
+  font-size:12.5px;color:var(--ink-2);line-height:1.65;display:none}
+.rev-ai.show{display:block}
+.rev-ai .lbl{font-size:9.5px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;
+  display:flex;align-items:center;gap:5px}
+.rev-ai .lbl svg{width:11px;height:11px}
+.rev-resp{margin-top:11px;padding:11px 13px;border-left:3px solid var(--hair);border-radius:0 var(--radius-xs) var(--radius-xs) 0;
+  background:var(--card-2);font-size:12.5px;color:var(--ink-2);line-height:1.65}
+.rev-resp .lbl{font-size:9.5px;font-weight:800;color:var(--ink-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.rev-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px;align-items:center}
+.empty{text-align:center;padding:52px 24px;color:var(--ink-3);font-size:13px}
+.footer{padding:26px 28px 40px;text-align:center;font-size:11.5px;color:var(--ink-3)}
+.footer b{color:var(--ink-2)}
+
+/* charts */
+.ch{width:100%;position:relative}
+.ch-260{height:260px}.ch-300{height:300px}.ch-220{height:220px}
+.tblview{display:none;max-height:260px;overflow:auto}
+.tblview.show{display:block}
+.tblview.show+.ch{display:none}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">
+    <img class="brand-logo" id="brandLogo" alt="" src="">
+    <div class="brand-sep" id="brandSep" style="display:none"></div>
+    <div class="brand-product">
+      <span class="name" id="brandName">Review Intelligence</span>
+      <span class="tag" id="brandTag">Review Intelligence</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="updated" id="updated"></div>
+    <button class="icon-btn" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode"></button>
+  </div>
+</header>
+
+<nav class="nav" id="nav"></nav>
+
+<div class="filters">
+  <span class="filter-lbl">Period</span>
+  <div class="seg" id="periodSeg"></div>
+  <span class="filter-lbl" style="margin-left:10px">Location</span>
+  <div class="seg" id="locSeg"></div>
+  <span class="count" id="scopeCount"></span>
+</div>
+
+<section class="page" id="page-overview"></section>
+<section class="page" id="page-locations"></section>
+<section class="page" id="page-sentiment"></section>
+<section class="page" id="page-actions"></section>
+<section class="page" id="page-staff"></section>
+<section class="page" id="page-reviews"></section>
+
+<div class="footer" id="footer"></div>
+
+<script>
+/* ═══════════════ DATA ═══════════════ */
+const DATA = /*__DATA__*/;
+
+/* ═══════════════ BRAND ═══════════════ */
+const BRAND = Object.assign(
+  {name:'GuestLens', tagline:'Review Intelligence', client:DATA.client||'', logo:'', builtBy:'Humble Goat Labs'},
+  DATA.brand||{});
+
+/* ═══════════════ ICONS (inline stroke SVG) ═══════════════ */
+const P = {
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5H15V14H9v7.5H4.5A1.5 1.5 0 0 1 3 20z"/>',
+  pin:'<path d="M21 10c0 6.5-9 12-9 12S3 16.5 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+  spark:'<path d="M12 2.5 14 9l6.5 2L14 13.5 12 20l-2-6.5L3.5 11 10 9z"/>',
+  alert:'<path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  sun:'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  up:'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  down:'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
+  ext:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  coffee:'<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+  food:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
+  zap:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  broom:'<path d="M19 3 9.5 12.5"/><path d="M4 21c0-4 2-6 5-7l2 2c-1 3-3 5-7 5z"/>',
+  dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+};
+const ico = (n,s=16)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n]||''}</svg>`;
+const THEME_ICONS = {Food:'food',Service:'heart',Speed:'zap',Cleanliness:'broom',Value:'dollar',Atmosphere:'coffee',Accuracy:'target',Other:'flag'};
+
+/* ═══════════════ STATE ═══════════════ */
+let activePeriod = DATA.defaultPeriod || '30d';
+let activeLoc = 'all';
+let activeTab = 'overview';
+let selectedLocCard = null;
+let revF = {sentiment:null, source:null, theme:null, staff:null, unanswered:false, search:''};
+let CH = {};   // echarts instances
+
+const PERIODS = [['7d','7D'],['30d','30D'],['90d','90D'],['180d','6M'],['365d','1Y'],['all','All']];
+const PERIOD_LABELS = {'7d':'Last 7 days','30d':'Last 30 days','90d':'Last 90 days','180d':'Last 6 months','365d':'Last year','all':'All time'};
+const SHORT_LOC = l => (DATA.shortLoc||{})[l]||l||'—';
+const PLT_COLOR = {Google:'#4285f4',Yelp:'#d32323',Tripadvisor:'#00aa6c','Uber Eats':'#06c167',DoorDash:'#eb1700'};
+
+/* ═══════════════ THEME TOKENS ═══════════════ */
+function isDark(){ return document.documentElement.dataset.theme==='dark'; }
+function T(){
+  const d = isDark();
+  return d ? {
+    surface:'#211d19', page:'#14110e', ink:'#f5f0ea', ink2:'#c7bfb4', muted:'#8a8378',
+    grid:'#2c2823', axis:'#383835',
+    series:['#d95926','#3987e5','#199e70','#9085e9','#c98500','#e66767','#d55181','#008300'],
+    good:'#0ca30c', crit:'#e05252', warn:'#fab219', serious:'#ec835a', accent:'#f97316',
+  } : {
+    surface:'#fffdf9', page:'#faf7f2', ink:'#1c1917', ink2:'#57534e', muted:'#a09a90',
+    grid:'#f0eae1', axis:'#e0d8cc',
+    series:['#eb6834','#2a78d6','#1baf7a','#4a3aa7','#eda100','#e34948','#e87ba4','#008300'],
+    good:'#0ca30c', crit:'#d03b3b', warn:'#eda100', serious:'#ec835a', accent:'#c2410c',
+  };
+}
+const SENT_COLOR = ()=>({Positive:T().good, Negative:T().crit, Mixed:T().serious, Neutral: isDark()?'#6b655c':'#b9b2a6'});
+
+/* ═══════════════ UTILS ═══════════════ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const pctOf = (n,t)=> t>0 ? Math.round(n/t*100) : 0;
+const fmtN = n => (n??0).toLocaleString();
+const stars = n => '★'.repeat(Math.round(n||0))+'☆'.repeat(5-Math.round(n||0));
+function fmtDate(iso){ if(!iso) return ''; try{ return new Date(iso.length>10?iso:iso+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch{ return iso; } }
+function weekLbl(iso){ try{ return new Date(iso+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }catch{ return iso; } }
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function period(){ return DATA.periods?.[activePeriod] || {}; }
+function scoped(){  // metrics for active location scope
+  const p = period();
+  if(activeLoc==='all') return p.network || {};
+  return p.byLocationMetrics?.[activeLoc] || {n:0};
+}
+function scopedDelta(){
+  const d = period().deltas;
+  if(!d) return null;
+  return activeLoc==='all' ? d.network : (d.byLocation?.[activeLoc] || null);
+}
+function scopedAnalysis(field){  // AI breakdowns; per-loc when available
+  const p = period();
+  if(activeLoc!=='all' && p.byLocationAnalysis?.[activeLoc])
+    return p.byLocationAnalysis[activeLoc][field] || {};
+  return p[field] || {};
+}
+function analysisIsScoped(){ return activeLoc==='all' || !!period().byLocationAnalysis?.[activeLoc]; }
+function locColor(loc){ const i=(period().locationsOrder||DATA.locationsOrder||[]).indexOf(loc); return T().series[(i<0?0:i)%8]; }
+
+/* count-up animation */
+function countUp(el, target, fmt){
+  if(reduceMotion || !isFinite(target)){ el.textContent = fmt(target); return; }
+  const dur=650, t0=performance.now();
+  (function tick(t){
+    const k = Math.min(1,(t-t0)/dur), e = 1-Math.pow(1-k,3);
+    el.textContent = fmt(target*e);
+    if(k<1) requestAnimationFrame(tick);
+  })(t0);
+}
+function deltaChip(v, dec=1, invert=false, suffix=''){
+  if(v===null || v===undefined) return '';
+  const eps = dec===0 ? .5 : Math.pow(10,-dec)/2;
+  const flat = Math.abs(v) < eps;
+  const good = invert ? v<0 : v>0;
+  const cls  = flat?'flat':(good?'up':'down');
+  const icon = flat?'':(v>0?ico('up',11):ico('down',11));
+  const txt  = (v>0?'+':'')+(dec===0?Math.round(v):v.toFixed(dec))+suffix;
+  return `<span class="delta ${cls}" title="vs previous ${esc(PERIOD_LABELS[activePeriod]||'period')}">${icon}${flat?'—':txt}</span>`;
+}
+function sparkSVG(vals, w=120, h=30){
+  const v = vals.filter(x=>x!==null&&x!==undefined);
+  if(v.length<2) return '';
+  const mn=Math.min(...v), mx=Math.max(...v), rg=(mx-mn)||1;
+  const pts = v.map((x,i)=>[(i/(v.length-1))*(w-6)+3, h-4-((x-mn)/rg)*(h-8)]);
+  const path = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const last = pts[pts.length-1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+    <path d="${path}" fill="none" stroke="${T().muted}" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${T().accent}" stroke="${T().surface}" stroke-width="1.5"/></svg>`;
+}
+
+/* ═══════════════ ECHARTS HELPERS ═══════════════ */
+function chart(id, opt){
+  const el = $(id); if(!el) return;
+  if(CH[id]){ CH[id].dispose(); delete CH[id]; }
+  const c = echarts.init(el, null, {renderer:'canvas'});
+  c.setOption(opt);
+  CH[id] = c;
+}
+function baseTooltip(){
+  const t=T();
+  return {backgroundColor:t.surface, borderColor:t.axis, borderWidth:1, padding:[9,12],
+    textStyle:{color:t.ink, fontSize:12, fontFamily:'Inter'},
+    extraCssText:'box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:10px;'};
+}
+function axisX(labels){
+  const t=T();
+  return {type:'category', data:labels, axisLine:{lineStyle:{color:t.axis}}, axisTick:{show:false},
+    axisLabel:{color:t.muted, fontSize:11, fontFamily:'Inter'}};
+}
+function axisY(opts={}){
+  const t=T();
+  return Object.assign({type:'value', axisLine:{show:false}, axisTick:{show:false},
+    splitLine:{lineStyle:{color:t.grid, width:1}},
+    axisLabel:{color:t.muted, fontSize:11, fontFamily:'Inter'}}, opts);
+}
+function legendBottom(){
+  const t=T();
+  return {bottom:0, icon:'roundRect', itemWidth:10, itemHeight:10, itemGap:16,
+    textStyle:{color:t.ink2, fontSize:11, fontFamily:'Inter'}};
+}
+const GRID = {left:8, right:14, top:14, bottom:34, containLabel:true};
+const GRID_NOLEG = {left:8, right:14, top:14, bottom:6, containLabel:true};
+
+function tableView(id, headers, rows){
+  return `<div class="tblview" id="tv-${id}"><table class="tbl"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function bindTableToggles(root){
+  root.querySelectorAll('.data-toggle').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const tv = $('tv-'+btn.dataset.for);
+      if(!tv) return;
+      const show = !tv.classList.contains('show');
+      tv.classList.toggle('show', show);
+      btn.textContent = show ? 'Chart' : 'Data';
+      if(!show) CH[btn.dataset.for]?.resize();
+    });
+  });
+}
+
+/* time-bucket helpers — charts cover the full selected period.
+   ≤6 months: weekly buckets · 1Y / All Time: monthly buckets so six years stay readable.
+   Monthly stars/respRate are averaged weighted by review count. */
+const MONTHLY_PERIODS = new Set(['365d','all']);
+function isMonthlyView(){ return MONTHLY_PERIODS.has(activePeriod); }
+function aggMonthly(weekly){
+  const m = {};
+  for(const w of (weekly||[])){
+    const k = (w.week||'').slice(0,7);
+    if(!k) continue;
+    const e = m[k] || (m[k] = {count:0, starSum:0, starN:0, respSum:0, respN:0});
+    e.count += w.count||0;
+    if(w.avgStars!=null && w.count){ e.starSum += w.avgStars*w.count; e.starN += w.count; }
+    if(w.respRate!=null && w.count){ e.respSum += w.respRate*w.count; e.respN += w.count; }
+  }
+  return Object.keys(m).sort().map(k=>({week:k, count:m[k].count,
+    avgStars: m[k].starN ? +(m[k].starSum/m[k].starN).toFixed(2) : null,
+    respRate: m[k].respN ? +(m[k].respSum/m[k].respN).toFixed(3) : 0}));
+}
+function seriesBuckets(weekly){ return isMonthlyView() ? aggMonthly(weekly) : (weekly||[]); }
+function scopedBuckets(){ return seriesBuckets(scoped().weekly); }
+function allBucketKeys(){
+  const p = period(); const s = new Set();
+  (p.locationsOrder||[]).forEach(l=>seriesBuckets(p.byLocationMetrics?.[l]?.weekly).forEach(b=>s.add(b.week)));
+  return [...s].sort();
+}
+function bucketLbl(k){
+  if((k||'').length===7){
+    try{ return new Date(k+'-01T00:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'}); }
+    catch{ return k; }
+  }
+  return weekLbl(k);
+}
+function bucketColHead(){ return isMonthlyView() ? 'Month' : 'Week'; }
+/* trend tooltip: rating + how many reviews are behind each point, so a lone
+   1-star review in a quiet week reads as "1.00★ · 1 review", not a crisis */
+function trendTooltipFmt(counts, keys){
+  return ps => {
+    const arr = Array.isArray(ps) ? ps : [ps];
+    const rows = arr.filter(p=>p.value!=null && p.value!=='').map(p=>{
+      const n = counts[p.seriesName]?.[keys[p.dataIndex]] ?? 0;
+      return `${p.marker} ${esc(p.seriesName)}&nbsp; <b>${(+p.value).toFixed(2)}★</b> <span style="opacity:.6">· ${fmtN(n)} review${n===1?'':'s'}</span>`;
+    });
+    if(!rows.length) return '';
+    return `<div style="font-weight:700;margin-bottom:4px">${esc(arr[0].axisValueLabel||'')}</div>`+rows.join('<br>');
+  };
+}
+
+/* ═══════════════ NAV / FILTERS ═══════════════ */
+const TABS = [
+  ['overview','Overview','home'], ['locations','Locations','pin'], ['sentiment','Sentiment AI','spark'],
+  ['actions','Action Center','alert'], ['staff','Staff Stars','users'], ['reviews','Reviews','msg'],
+];
+function actionCount(){
+  const q = DATA.actionQueue || (DATA.recentNegatives||[]).map(x=>({urgency:null}));
+  return q.length;
+}
+function renderNav(){
+  $('nav').innerHTML = TABS.map(([id,lbl,icn])=>{
+    const badge = id==='actions' && actionCount() ? `<span class="tab-badge">${actionCount()}</span>` : '';
+    return `<button class="tab-btn${id===activeTab?' active':''}" data-tab="${id}">${ico(icn)}${lbl}${badge}</button>`;
+  }).join('');
+  $('nav').querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{
+    activeTab = b.dataset.tab;
+    $('nav').querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
+    document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id==='page-'+activeTab));
+    renderTab(activeTab);
+  }));
+}
+function renderFilters(){
+  $('periodSeg').innerHTML = PERIODS.map(([k,l])=>
+    `<button class="${k===activePeriod?'active':''}" data-p="${k}">${l}</button>`).join('');
+  $('periodSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    activePeriod = b.dataset.p; renderFilters(); renderTab(activeTab); updateScopeCount();
+  }));
+  const locs = DATA.locationsOrder||[];
+  $('locSeg').innerHTML = [`<button class="${activeLoc==='all'?'active':''}" data-l="all">All</button>`,
+    ...locs.map(l=>`<button class="${l===activeLoc?'active':''}" data-l="${esc(l)}">${esc(SHORT_LOC(l))}</button>`)].join('');
+  $('locSeg').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    activeLoc = b.dataset.l; renderFilters(); renderTab(activeTab); updateScopeCount();
+  }));
+}
+function updateScopeCount(){
+  const n = scoped().n||0;
+  $('scopeCount').textContent = `${fmtN(n)} reviews · ${PERIOD_LABELS[activePeriod]}${activeLoc!=='all'?' · '+SHORT_LOC(activeLoc):''}`;
+}
+
+/* ═══════════════ CROSS-FILTER ═══════════════ */
+function crossFilter(patch){
+  revF = {sentiment:null, source:null, theme:null, staff:null, unanswered:false, search:''};
+  Object.assign(revF, patch);
+  activeTab = 'reviews';
+  renderNav();
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id==='page-reviews'));
+  renderTab('reviews');
+  window.scrollTo({top:0, behavior: reduceMotion?'auto':'smooth'});
+}
+
+/* ═══════════════ TAB DISPATCH ═══════════════ */
+function renderTab(tab){
+  ({overview:renderOverview, locations:renderLocations, sentiment:renderSentiment,
+    actions:renderActions, staff:renderStaff, reviews:renderReviews}[tab]||renderOverview)();
+}
+
+/* ═══════════════ OVERVIEW ═══════════════ */
+function renderOverview(){
+  const root = $('page-overview');
+  const m = scoped(), p = period(), d = scopedDelta();
+  const posRate = analysisIsScoped()
+    ? (activeLoc==='all' ? (p.positiveRate??null) : (p.byLocationAnalysis?.[activeLoc]?.positiveRate ?? null))
+    : null;
+  const wk = scopedBuckets();
+  const unansNeg = m.unansweredNegatives||0;
+
+  const briefTxt = (p.brief||'').replace(/^📅[^\n]*\n+/,'').trim();
+  const briefHtml = (briefTxt && activeLoc==='all') ? `
+    <div class="brief">
+      <div class="brief-head">${ico('spark',17)}<span class="t">AI Intelligence Brief — ${esc(PERIOD_LABELS[activePeriod])}</span></div>
+      <div class="brief-body" id="briefBody">${esc(briefTxt)}</div>
+      <button class="brief-more" id="briefMore">Read full brief</button>
+    </div>` : '';
+
+  root.innerHTML = `
+    <div class="hero">
+      <div class="hero-main">
+        <div class="hero-num"><span id="heroAvg">0.0</span><span class="star">${stars(m.avgStars)}</span></div>
+        <div class="hero-lbl">Average rating ${d?deltaChip(d.avgStars,1):''}</div>
+      </div>
+      <div class="hero-tiles">
+        <div class="htile"><div class="v" id="heroN">0</div><div class="l">Reviews ${d?deltaChip(d.count,0,false):''}</div></div>
+        <div class="htile"><div class="v">${posRate!==null?posRate+'%':'—'}</div><div class="l">Positive ${d&&d.positiveRate!=null?deltaChip(d.positiveRate,1,false,'pt'):''}</div></div>
+        <div class="htile"><div class="v">${Math.round((m.responseRate||0)*100)}%</div><div class="l">Responded ${d&&d.responseRate!=null?deltaChip(d.responseRate*100,0,false,'pt'):''}</div></div>
+      </div>
+    </div>
+    ${briefHtml}
+    <div class="grid grid-4 mb" id="kpis"></div>
+    <div class="grid grid-21 mb">
+      <div class="card">
+        <div class="card-head"><span class="card-title">${ico('up',14)} Rating trend</span>
+          <button class="data-toggle" data-for="trendCh">Data</button></div>
+        ${(()=>{
+          const keys = allBucketKeys();
+          const maps = (p.locationsOrder||[]).map(l=>{
+            const mm={}; seriesBuckets(p.byLocationMetrics?.[l]?.weekly).forEach(b=>mm[b.week]=b.avgStars); return mm;});
+          return tableView('trendCh', [bucketColHead(),...(p.locationsOrder||[]).map(SHORT_LOC)],
+            keys.map(k=>[bucketLbl(k), ...maps.map(mm=>mm[k]??'—')]));
+        })()}
+        <div class="ch ch-260" id="trendCh"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">${ico('flag',14)} Platforms</span></div>
+        <div id="platList"></div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><span class="card-title">${ico('spark',14)} Sentiment</span></div>
+        <div id="sentBar"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">${ico('msg',14)} ${isMonthlyView()?'Monthly':'Weekly'} volume</span>
+          <button class="data-toggle" data-for="volCh">Data</button></div>
+        ${tableView('volCh', [bucketColHead(),'Reviews'], wk.map(w=>[bucketLbl(w.week), w.count]))}
+        <div class="ch ch-260" id="volCh"></div>
+      </div>
+    </div>`;
+
+  countUp($('heroAvg'), m.avgStars||0, v=>v.toFixed(1));
+  countUp($('heroN'), m.n||0, v=>fmtN(Math.round(v)));
+
+  if($('briefMore')) $('briefMore').addEventListener('click',()=>{
+    const b=$('briefBody'); b.classList.toggle('open');
+    $('briefMore').textContent = b.classList.contains('open')?'Collapse':'Read full brief';
+  });
+
+  /* KPI tiles */
+  const staffTotal = (analysisIsScoped()? (activeLoc==='all'?p.staffLeaderboard:(p.staffLeaderboard||[]).filter(s=>s.loc===activeLoc)) : [])
+    ?.reduce((s,x)=>s+x.mentions,0) ?? 0;
+  const lag = m.medianResponseLagDays;
+  $('kpis').innerHTML = [
+    {icn:'star', lbl:'Average rating', val:(m.avgStars||0).toFixed(1), sub:stars(m.avgStars), spark:wk.map(w=>w.avgStars)},
+    {icn:'msg',  lbl:'Review volume', val:fmtN(m.n||0), sub:`${m.recent7??'—'} in the last 7 days`, spark:wk.map(w=>w.count)},
+    {icn:'check',lbl:'Response rate', val:Math.round((m.responseRate||0)*100)+'%',
+      sub: lag!=null?`median reply ${lag} day${lag===1?'':'s'}`:(m.withResponse||0)+' answered', spark:wk.map(w=>w.respRate)},
+    {icn:'alert',lbl:'Needs attention', val:fmtN(unansNeg), sub:unansNeg?'unanswered negative reviews':'nothing pending 🎉',
+      crit:unansNeg>0, click:'actions'},
+  ].map(k=>`
+    <div class="card stat${k.click?' hoverable':''}" ${k.click?`data-go="${k.click}" style="cursor:pointer"`:''}>
+      <div class="top"><span class="lbl">${k.lbl}</span><span class="ic" ${k.crit?`style="background:var(--crit-soft);color:var(--crit)"`:''}>${ico(k.icn,16)}</span></div>
+      <div class="val" ${k.crit?'style="color:var(--crit-text)"':''}>${k.val}</div>
+      <div class="sub">${k.sub}</div>
+      ${k.spark?sparkSVG(k.spark):''}
+    </div>`).join('');
+  root.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>{
+    document.querySelector(`.tab-btn[data-tab="${el.dataset.go}"]`)?.click();
+  }));
+
+  /* trend chart — per-location lines (or single line when scoped) */
+  const t=T();
+  const denseAxis = isMonthlyView();          // many buckets → smaller markers, thinner lines
+  const symSize = denseAxis ? 4 : 7;
+  if(activeLoc==='all'){
+    const weeks = allBucketKeys();
+    const counts = {};
+    const series = (p.locationsOrder||[]).map((l,i)=>{
+      const wm={}, cc={};
+      seriesBuckets(p.byLocationMetrics?.[l]?.weekly).forEach(b=>{wm[b.week]=b.avgStars; cc[b.week]=b.count;});
+      counts[SHORT_LOC(l)] = cc;
+      return {name:SHORT_LOC(l), type:'line', data:weeks.map(w=>wm[w]??null), connectNulls:true,
+        smooth:.3, symbol:'circle', symbolSize:symSize,
+        lineStyle:{width:2}, itemStyle:{color:t.series[i%8], borderColor:t.surface, borderWidth:denseAxis?1:2},
+        emphasis:{focus:'series'}};
+    });
+    chart('trendCh', {grid:GRID, tooltip:Object.assign(baseTooltip(),{trigger:'axis',
+        axisPointer:{type:'line', lineStyle:{color:t.axis, width:1}},
+        formatter:trendTooltipFmt(counts, weeks)}),
+      legend:legendBottom(), xAxis:axisX(weeks.map(bucketLbl)),
+      yAxis:axisY({min:v=>Math.min(3,Math.floor(v.min*2)/2), max:5, axisLabel:{formatter:'{value}★', color:t.muted, fontSize:11}}),
+      series, animationDuration:600});
+  } else {
+    const weeks = wk.map(w=>w.week);
+    const counts = {[SHORT_LOC(activeLoc)]: Object.fromEntries(wk.map(w=>[w.week, w.count]))};
+    chart('trendCh', {grid:GRID_NOLEG, tooltip:Object.assign(baseTooltip(),{trigger:'axis',
+        axisPointer:{type:'line', lineStyle:{color:t.axis, width:1}},
+        formatter:trendTooltipFmt(counts, weeks)}),
+      xAxis:axisX(weeks.map(bucketLbl)),
+      yAxis:axisY({min:v=>Math.min(3,Math.floor(v.min*2)/2), max:5, axisLabel:{formatter:'{value}★', color:t.muted, fontSize:11}}),
+      series:[{name:SHORT_LOC(activeLoc), type:'line', data:wk.map(w=>w.avgStars), connectNulls:true, smooth:.3,
+        symbol:'circle', symbolSize:symSize, lineStyle:{width:2},
+        itemStyle:{color:locColor(activeLoc), borderColor:t.surface, borderWidth:denseAxis?1:2},
+        areaStyle:{color:locColor(activeLoc), opacity:.09}}],
+      animationDuration:600});
+  }
+
+  /* platforms */
+  const bd = m.sourceBreakdown||{};
+  $('platList').innerHTML = Object.entries(bd).sort((a,b)=>b[1].n-a[1].n).map(([src,x])=>`
+    <div class="plat" data-src="${esc(src)}" title="View ${esc(src)} reviews">
+      <div class="plat-badge" style="background:${PLT_COLOR[src]||'#78716c'}">${esc(src.slice(0,2).toUpperCase())}</div>
+      <div style="flex:1"><div class="nm">${esc(src)}</div><div class="ct">${fmtN(x.n)} reviews · ${Math.round((x.respRate||0)*100)}% answered</div></div>
+      <div><div class="sc">${(x.avgStars||0).toFixed(1)}</div><div class="st">${stars(x.avgStars)}</div></div>
+    </div>`).join('') || '<div class="empty">No platform data</div>';
+  $('platList').querySelectorAll('.plat').forEach(el=>
+    el.addEventListener('click',()=>crossFilter({source:el.dataset.src})));
+
+  /* sentiment diverging bar */
+  renderSentimentBar($('sentBar'));
+
+  /* volume stacked bar */
+  if(activeLoc==='all'){
+    const weeks = allBucketKeys();
+    const series = (p.locationsOrder||[]).map((l,i)=>{
+      const wm={}; seriesBuckets(p.byLocationMetrics?.[l]?.weekly).forEach(b=>wm[b.week]=b.count);
+      return {name:SHORT_LOC(l), type:'bar', stack:'v', data:weeks.map(w=>wm[w]||0), barMaxWidth:24,
+        itemStyle:{color:t.series[i%8], borderColor:t.surface, borderWidth:denseAxis?0.5:1}};
+    });
+    chart('volCh', {grid:GRID, tooltip:Object.assign(baseTooltip(),{trigger:'axis'}), legend:legendBottom(),
+      xAxis:Object.assign(axisX(weeks.map(bucketLbl)),{axisTick:{show:false}}), yAxis:axisY(), series, animationDuration:600});
+  } else {
+    chart('volCh', {grid:GRID_NOLEG, tooltip:Object.assign(baseTooltip(),{trigger:'axis'}),
+      xAxis:axisX(wk.map(w=>bucketLbl(w.week))), yAxis:axisY(),
+      series:[{name:'Reviews', type:'bar', data:wk.map(w=>w.count), barMaxWidth:24,
+        itemStyle:{color:locColor(activeLoc), borderRadius:denseAxis?[2,2,0,0]:[4,4,0,0]}}], animationDuration:600});
+  }
+
+  bindTableToggles(root);
+}
+
+function renderSentimentBar(el){
+  const bd = scopedAnalysis('sentimentBreakdown');
+  const order = ['Negative','Mixed','Neutral','Positive'];
+  const total = order.reduce((s,k)=>s+(bd[k]||0),0);
+  if(!total){ el.innerHTML = `<div class="empty">No AI sentiment data${!analysisIsScoped()?' for this location scope':''} in this period</div>`; return; }
+  const C = SENT_COLOR();
+  el.innerHTML = `
+    <div class="divbar">${order.filter(k=>bd[k]>0).map(k=>{
+      const pct = (bd[k]/total*100);
+      const ink = k==='Neutral' ? (isDark()?'#f5f0ea':'#57534e') : '#fff';
+      return `<div class="seg-s" data-s="${k}" style="width:${pct}%;background:${C[k]};color:${ink}" title="${k}: ${bd[k]} (${pct.toFixed(0)}%)">${pct>=9?pct.toFixed(0)+'%':''}</div>`;
+    }).join('')}</div>
+    <div class="legend-row">${order.filter(k=>bd[k]>0).map(k=>
+      `<span class="key" data-s="${k}"><span class="dot" style="background:${C[k]}"></span>${k} · <b>${fmtN(bd[k])}</b></span>`).join('')}</div>
+    ${!analysisIsScoped()?'<div style="font-size:11px;color:var(--ink-3);margin-top:8px">AI analysis shown for all locations</div>':''}`;
+  el.querySelectorAll('[data-s]').forEach(x=>x.addEventListener('click',()=>crossFilter({sentiment:x.dataset.s})));
+}
+
+/* ═══════════════ LOCATIONS ═══════════════ */
+function renderLocations(){
+  const root = $('page-locations');
+  const p = period();
+  const locs = p.locationsOrder||[];
+  if(!locs.length){ root.innerHTML = '<div class="empty">No reviews in this period</div>'; return; }
+  if(!selectedLocCard || !locs.includes(selectedLocCard)) selectedLocCard = (activeLoc!=='all'&&locs.includes(activeLoc))?activeLoc:locs[0];
+
+  root.innerHTML = `
+    <div class="grid grid-4 mb" id="locCards"></div>
+    <div class="grid grid-2 mb">
+      <div class="card"><div class="card-head"><span class="card-title" id="locTrendT"></span></div><div class="ch ch-300" id="locTrend"></div></div>
+      <div class="card"><div class="card-head"><span class="card-title" id="locVolT"></span></div><div class="ch ch-300" id="locVol"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">${ico('pin',14)} Side by side — ${esc(PERIOD_LABELS[activePeriod])}</span></div>
+      <div style="overflow-x:auto"><table class="tbl" id="locTable"></table></div>
+    </div>`;
+
+  const d = period().deltas;
+  $('locCards').innerHTML = locs.map(l=>{
+    const m = p.byLocationMetrics?.[l]||{};
+    const dl = d?.byLocation?.[l];
+    const pills = Object.entries(m.subratings||{}).map(([k,v])=>`<span class="pill">${esc(k)} ${v.toFixed(1)}★</span>`).join('');
+    return `<div class="card loc-card hoverable${l===selectedLocCard?' selected':''}" data-loc="${esc(l)}">
+      <div class="bar-top" style="background:${locColor(l)}"></div>
+      <div class="loc-score">${(m.avgStars||0).toFixed(1)}<span class="star">★</span>${dl?deltaChip(dl.avgStars,1):''}</div>
+      <div class="loc-name">${esc(SHORT_LOC(l))}</div>
+      <div class="loc-sub">${fmtN(m.n||0)} reviews · ${Math.round((m.responseRate||0)*100)}% answered</div>
+      <div class="pills">${pills}</div>
+    </div>`;
+  }).join('');
+
+  $('locCards').querySelectorAll('.loc-card').forEach(c=>c.addEventListener('click',()=>{
+    selectedLocCard = c.dataset.loc;
+    $('locCards').querySelectorAll('.loc-card').forEach(x=>x.classList.toggle('selected',x===c));
+    locDetailCharts();
+  }));
+
+  const smByLoc = p.staffMentionsByLoc || null;
+  $('locTable').innerHTML = `<thead><tr><th>Location</th><th class="num">Reviews</th><th class="num">Avg ★</th>
+    ${smByLoc?'<th class="num">Staff mentions</th>':''}
+    <th class="num">Answered</th><th class="num">Unanswered neg.</th></tr></thead><tbody>${
+    locs.map(l=>{ const m=p.byLocationMetrics?.[l]||{};
+      return `<tr><td><span style="display:inline-flex;align-items:center;gap:8px"><span class="dot" style="width:9px;height:9px;border-radius:3px;background:${locColor(l)};display:inline-block"></span><b>${esc(SHORT_LOC(l))}</b></span></td>
+        <td class="num">${fmtN(m.n||0)}</td><td class="num">${(m.avgStars||0).toFixed(2)}</td>
+        ${smByLoc?`<td class="num">${fmtN(smByLoc[l]||0)}</td>`:''}
+        <td class="num">${Math.round((m.responseRate||0)*100)}%</td>
+        <td class="num">${m.unansweredNegatives?`<span style="color:var(--crit-text);font-weight:700">${m.unansweredNegatives}</span>`:'0'}</td></tr>`;
+    }).join('')}</tbody>`;
+
+  locDetailCharts();
+}
+function locDetailCharts(){
+  const p = period(), t = T();
+  const l = selectedLocCard;
+  const m = p.byLocationMetrics?.[l]||{};
+  const wk = seriesBuckets(m.weekly);
+  const dense = isMonthlyView();
+  const color = locColor(l);
+  $('locTrendT').innerHTML = `${ico('up',14)} ${esc(SHORT_LOC(l))} — rating trend`;
+  $('locVolT').innerHTML   = `${ico('msg',14)} ${esc(SHORT_LOC(l))} — review volume`;
+  const locCounts = {'Avg ★': Object.fromEntries(wk.map(w=>[w.week, w.count]))};
+  const locKeys = wk.map(w=>w.week);
+  chart('locTrend', {grid:GRID_NOLEG, tooltip:Object.assign(baseTooltip(),{trigger:'axis',
+      axisPointer:{type:'line', lineStyle:{color:t.axis,width:1}}, formatter:trendTooltipFmt(locCounts, locKeys)}),
+    xAxis:axisX(wk.map(w=>bucketLbl(w.week))),
+    yAxis:axisY({min:v=>Math.min(3,Math.floor(v.min*2)/2), max:5,axisLabel:{formatter:'{value}★',color:t.muted,fontSize:11}}),
+    series:[{name:'Avg ★', type:'line', data:wk.map(w=>w.avgStars), connectNulls:true, smooth:.3, symbol:'circle', symbolSize:dense?4:7,
+      lineStyle:{width:2}, itemStyle:{color, borderColor:t.surface, borderWidth:dense?1:2}, areaStyle:{color, opacity:.09}}],
+    animationDuration:500});
+  chart('locVol', {grid:GRID_NOLEG, tooltip:Object.assign(baseTooltip(),{trigger:'axis'}),
+    xAxis:axisX(wk.map(w=>bucketLbl(w.week))), yAxis:axisY(),
+    series:[{name:'Reviews', type:'bar', data:wk.map(w=>w.count), barMaxWidth:24,
+      itemStyle:{color, borderRadius:dense?[2,2,0,0]:[4,4,0,0]}}], animationDuration:500});
+}
+
+/* ═══════════════ SENTIMENT AI ═══════════════ */
+function renderSentiment(){
+  const root = $('page-sentiment');
+  const p = period();
+  const sBd = scopedAnalysis('sentimentBreakdown');
+  const uBd = scopedAnalysis('urgencyBreakdown');
+  const total = Object.values(sBd).reduce((s,x)=>s+x,0);
+  const dishes = activeLoc==='all' ? (p.dishes||null) : (p.byLocationAnalysis?.[activeLoc]?.dishes || null);
+
+  root.innerHTML = `
+    <div class="grid grid-4 mb" id="aiKpis"></div>
+    <div class="grid grid-2 mb">
+      <div class="card"><div class="card-head"><span class="card-title">${ico('flag',14)} What guests talk about</span></div><div id="themeBars"></div></div>
+      <div class="card"><div class="card-head"><span class="card-title">${ico('clock',14)} Urgency</span></div><div id="urgBars"></div></div>
+    </div>
+    <div class="grid grid-2 mb">
+      <div class="card"><div class="card-head"><span class="card-title" style="color:var(--crit-text)">${ico('alert',14)} Top complaints</span>
+        <button class="data-toggle" data-for="compCh">Data</button></div>
+        <div id="compWrap"></div></div>
+      <div class="card"><div class="card-head"><span class="card-title" style="color:var(--good-text)">${ico('heart',14)} Top praise</span>
+        <button class="data-toggle" data-for="praiseCh">Data</button></div>
+        <div id="praiseWrap"></div></div>
+    </div>
+    ${dishes && dishes.length ? `<div class="card mb"><div class="card-head"><span class="card-title">${ico('food',14)} Dish intelligence — what the menu is telling you</span></div><div id="dishWrap" class="ch ch-300"></div></div>` : ''}
+    <div class="card"><div class="card-head"><span class="card-title">${ico('star',14)} Star distribution</span>
+      <button class="data-toggle" data-for="starCh">Data</button></div>
+      <div id="starWrap"></div></div>`;
+
+  const urgent = (uBd.High||0)+(uBd.Critical||0);
+  $('aiKpis').innerHTML = [
+    {lbl:'Positive reviews', v:sBd.Positive||0, sub:pctOf(sBd.Positive||0,total)+'% of analyzed', color:'var(--good-text)', icn:'heart', s:'Positive'},
+    {lbl:'Negative reviews', v:sBd.Negative||0, sub:pctOf(sBd.Negative||0,total)+'% of analyzed', color:'var(--crit-text)', icn:'alert', s:'Negative'},
+    {lbl:'High urgency', v:urgent, sub:'need immediate attention', color:'var(--serious)', icn:'zap', go:'actions'},
+    {lbl:'Analyzed by AI', v:total, sub:'every review, every platform', icn:'spark'},
+  ].map(k=>`<div class="card stat${k.s||k.go?' hoverable':''}" ${k.s?`data-sent="${k.s}"`:''} ${k.go?`data-go="${k.go}"`:''} ${(k.s||k.go)?'style="cursor:pointer"':''}>
+      <div class="top"><span class="lbl">${k.lbl}</span><span class="ic">${ico(k.icn,16)}</span></div>
+      <div class="val" style="color:${k.color||'var(--ink)'}">${fmtN(k.v)}</div><div class="sub">${k.sub}</div></div>`).join('');
+  root.querySelectorAll('[data-sent]').forEach(el=>el.addEventListener('click',()=>crossFilter({sentiment:el.dataset.sent})));
+  root.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>document.querySelector(`.tab-btn[data-tab="${el.dataset.go}"]`)?.click()));
+
+  /* themes */
+  const tBd = scopedAnalysis('themeBreakdown');
+  const tTotal = Object.values(tBd).reduce((s,x)=>s+x,0);
+  $('themeBars').innerHTML = Object.entries(tBd).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct = pctOf(v,tTotal);
+    return `<div class="hbar-item" data-theme="${esc(k)}" title="View ${esc(k)} reviews">
+      <div class="hbar-head"><span class="nm">${ico(THEME_ICONS[k]||'flag',14)} ${esc(k)}</span><span class="pv">${pct}% · ${fmtN(v)}</span></div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('') || '<div class="empty">No theme data in this period</div>';
+  $('themeBars').querySelectorAll('[data-theme]').forEach(el=>
+    el.addEventListener('click',()=>crossFilter({theme:el.dataset.theme})));
+
+  /* urgency */
+  const uOrder=['Critical','High','Medium','Low','None'];
+  const uColor={Critical:'var(--crit)',High:'var(--crit)',Medium:'var(--warn)',Low:'var(--good)',None:'var(--ink-3)'};
+  const uTotal=Object.values(uBd).reduce((s,x)=>s+x,0);
+  $('urgBars').innerHTML = uOrder.filter(k=>uBd[k]>0).map(k=>`
+    <div class="hbar-item static"><div class="hbar-head"><span class="nm">${esc(k)}</span><span class="pv">${fmtN(uBd[k])}</span></div>
+    <div class="hbar-track"><div class="hbar-fill" style="width:${pctOf(uBd[k],uTotal)}%;background:${uColor[k]}"></div></div></div>`).join('')
+    || '<div class="empty">No urgency data</div>';
+
+  /* complaints & praise — status hues, value labels */
+  const t=T();
+  const mkCat = (wrapId,chId,data,color)=>{
+    const sorted = Object.entries(data).filter(([k])=>k!=='None').sort((a,b)=>a[1]-b[1]).slice(-7);
+    const wrap = $(wrapId);
+    if(!sorted.length){ wrap.innerHTML='<div class="empty">Nothing in this period</div>'; return; }
+    wrap.innerHTML = tableView(chId, ['Category','Reviews'], [...sorted].reverse().map(([k,v])=>[k,v]))
+      + `<div class="ch ch-220" id="${chId}"></div>`;
+    chart(chId, {grid:{left:8,right:40,top:6,bottom:6,containLabel:true},
+      tooltip:Object.assign(baseTooltip(),{trigger:'item'}),
+      xAxis:axisY({splitLine:{lineStyle:{color:t.grid}}}),
+      yAxis:{type:'category', data:sorted.map(([k])=>k), axisLine:{show:false}, axisTick:{show:false},
+        axisLabel:{color:t.ink2, fontSize:11.5, fontFamily:'Inter', width:118, overflow:'truncate'}},
+      series:[{type:'bar', data:sorted.map(([,v])=>v), barMaxWidth:18,
+        itemStyle:{color, borderRadius:[0,4,4,0]},
+        label:{show:true, position:'right', color:t.ink2, fontSize:11, fontFamily:'Inter'}}],
+      animationDuration:500});
+  };
+  mkCat('compWrap','compCh', scopedAnalysis('complaintCategories'), t.crit);
+  mkCat('praiseWrap','praiseCh', scopedAnalysis('praiseCategories'), t.good);
+
+  /* dishes */
+  if(dishes && dishes.length){
+    const top = dishes.slice(0,10).reverse();
+    chart('dishWrap', {grid:{left:8,right:44,top:6,bottom:28,containLabel:true},
+      tooltip:Object.assign(baseTooltip(),{trigger:'axis'}), legend:legendBottom(),
+      xAxis:axisY({splitLine:{lineStyle:{color:t.grid}}}),
+      yAxis:{type:'category', data:top.map(x=>x.name), axisLine:{show:false}, axisTick:{show:false},
+        axisLabel:{color:t.ink2, fontSize:11.5, fontFamily:'Inter'}},
+      series:[
+        {name:'Praised', type:'bar', stack:'d', data:top.map(x=>x.pos), barMaxWidth:18,
+          itemStyle:{color:t.good, borderColor:t.surface, borderWidth:1}},
+        {name:'Criticized', type:'bar', stack:'d', data:top.map(x=>x.neg), barMaxWidth:18,
+          itemStyle:{color:t.crit, borderColor:t.surface, borderWidth:1},
+          label:{show:true, position:'right', color:t.ink2, fontSize:11,
+            formatter:p2=>fmtN(top[p2.dataIndex].mentions)}},
+      ], animationDuration:500});
+  }
+
+  /* star distribution — single hue, labeled */
+  const sd = activeLoc==='all' ? (p.starDistribution||{}) : (scoped().starsDist||{});
+  $('starWrap').innerHTML = tableView('starCh', ['Stars','Reviews'],
+      ['5','4','3','2','1'].map(k=>[k+'★', sd[k]||0]))
+    + `<div class="ch ch-220" id="starCh"></div>`;
+  chart('starCh', {grid:GRID_NOLEG, tooltip:Object.assign(baseTooltip(),{trigger:'item'}),
+    xAxis:axisX(['1★','2★','3★','4★','5★']), yAxis:axisY(),
+    series:[{type:'bar', data:['1','2','3','4','5'].map(k=>sd[k]||0), barMaxWidth:24,
+      itemStyle:{color:t.series[0], borderRadius:[4,4,0,0]},
+      label:{show:true, position:'top', color:t.ink2, fontSize:11, fontFamily:'Inter', formatter:p2=>fmtN(p2.value)}}],
+    animationDuration:500});
+
+  bindTableToggles(root);
+}
+
+/* ═══════════════ ACTION CENTER ═══════════════ */
+function actionItems(){
+  let items;
+  if(DATA.actionQueue){
+    items = DATA.actionQueue.map(a=>({...a}));
+  } else {
+    items = (DATA.recentNegatives||[]).map(r=>({
+      date:(r.publishedAt||'').slice(0,10), loc:r.loc, source:r.source, rating:r.stars,
+      text:r.text||'', reviewer:r.reviewer?.name||'Guest', url:r.url||'',
+      urgency:null, tone:null, keyPoints:null, summary:null,
+    }));
+  }
+  if(activeLoc!=='all') items = items.filter(a=>a.loc===activeLoc);
+  const rank = {Critical:0, High:1, Medium:2, Low:3};
+  items.sort((a,b)=>((rank[a.urgency]??2)-(rank[b.urgency]??2)) || (b.date||'').localeCompare(a.date||''));
+  return items;
+}
+function renderActions(){
+  const root = $('page-actions');
+  const items = actionItems();
+  if(!items.length){
+    root.innerHTML = `<div class="ok-banner">${ico('check',22)} All clear — every negative review has a response. This is what great guest recovery looks like.</div>`;
+    return;
+  }
+  root.innerHTML = `
+    <div class="card mb" style="display:flex;align-items:center;gap:14px;border-left:4px solid var(--crit)">
+      <span style="color:var(--crit)">${ico('alert',22)}</span>
+      <div><div style="font-weight:800;font-size:15px">${items.length} review${items.length!==1?'s':''} waiting for a response</div>
+      <div style="font-size:12px;color:var(--ink-3)">Negative reviews without an owner reply — answering within 48 hours measurably improves how future guests read them.</div></div>
+    </div>
+    <div id="actionList"></div>`;
+  $('actionList').innerHTML = items.map((a,i)=>{
+    const urgCls = (a.urgency==='Medium')?'med':'';
+    const kp = Array.isArray(a.keyPoints)?a.keyPoints:(a.keyPoints?String(a.keyPoints).split('\n').filter(Boolean):[]);
+    return `<div class="card action-card ${urgCls}">
+      <div class="action-head">
+        <div class="action-meta">
+          <div class="who">${esc(a.reviewer||'Guest')}</div>
+          <div class="when">${fmtDate(a.date)} · ${esc(SHORT_LOC(a.loc))} · <span class="badge b-${esc((a.source||'').toLowerCase())}">${esc(a.source||'')}</span>
+          ${a.urgency?`<span class="badge b-urg-${esc(a.urgency)}">${esc(a.urgency)} urgency</span>`:''}</div>
+        </div>
+        <div class="action-stars">${stars(a.rating)}</div>
+      </div>
+      <div class="action-text">${esc((a.text||'').slice(0,700))}${(a.text||'').length>700?'…':''}</div>
+      ${(a.tone||kp.length)?`<div class="coach">
+        <div class="coach-t">${ico('spark',12)} AI response coaching</div>
+        ${a.tone?`<div class="tone">Suggested tone: <b>${esc(a.tone)}</b></div>`:''}
+        ${kp.length?`<ul>${kp.map(x=>`<li>${esc(x.replace(/^[-•]\s*/,''))}</li>`).join('')}</ul>`:''}
+      </div>`:''}
+      <div class="action-foot">
+        ${a.url?`<a class="btn btn-primary" href="${esc(a.url)}" target="_blank" rel="noopener">${ico('ext',13)} Respond on ${esc(a.source)}</a>`:''}
+        ${kp.length||a.tone?`<button class="btn btn-ghost" data-copy="${i}">${ico('copy',13)} Copy talking points</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  $('actionList').querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>{
+    const a = items[+btn.dataset.copy];
+    const kp = Array.isArray(a.keyPoints)?a.keyPoints:(a.keyPoints?String(a.keyPoints).split('\n').filter(Boolean):[]);
+    const txt = [a.tone?`Tone: ${a.tone}`:'', ...kp].filter(Boolean).join('\n');
+    navigator.clipboard?.writeText(txt).then(()=>{ btn.innerHTML = `${ico('check',13)} Copied`; setTimeout(()=>btn.innerHTML=`${ico('copy',13)} Copy talking points`,1600); });
+  }));
+}
+
+/* ═══════════════ STAFF ═══════════════ */
+function renderStaff(){
+  const root = $('page-staff');
+  const p = period();
+  let staff = p.staffLeaderboard||[];
+  if(activeLoc!=='all') staff = staff.filter(s=>s.loc===activeLoc);
+  if(!staff.length){ root.innerHTML = '<div class="empty">No staff mentions found in this period</div>'; return; }
+  const t=T(), medals=['🥇','🥈','🥉'];
+
+  root.innerHTML = `
+    <div class="grid grid-3 mb" id="staffTop"></div>
+    <div class="grid grid-2 mb">
+      <div class="card"><div class="card-head"><span class="card-title">${ico('users',14)} Top 10 by mentions</span>
+        <button class="data-toggle" data-for="staffCh">Data</button></div>
+        <div id="staffChWrap"></div></div>
+      <div class="card"><div class="card-head"><span class="card-title">${ico('star',14)} Full leaderboard</span></div>
+        <div style="overflow-x:auto;max-height:340px;overflow-y:auto"><table class="tbl" id="staffTbl"></table></div></div>
+    </div>
+    <div id="needsReview"></div>`;
+
+  $('staffTop').innerHTML = staff.slice(0,3).map((s,i)=>`
+    <div class="card hoverable podium" data-staff="${esc(s.name)}" style="cursor:pointer" title="View reviews mentioning ${esc(s.name)}">
+      <div class="avatar" style="background:${locColor(s.loc)}">${esc(s.name.charAt(0).toUpperCase())}</div>
+      <div><div class="medal">${medals[i]||''}</div><div class="nm">${esc(s.name)}</div><div class="dt">${esc(SHORT_LOC(s.loc))}</div></div>
+      <div class="mention-count"><div class="n">${fmtN(s.mentions)}</div><div class="l">mentions</div></div>
+    </div>`).join('');
+  $('staffTop').querySelectorAll('[data-staff]').forEach(el=>
+    el.addEventListener('click',()=>crossFilter({staff:el.dataset.staff})));
+
+  const top10 = staff.slice(0,10).reverse();
+  $('staffChWrap').innerHTML = tableView('staffCh',['Name','Mentions'],[...top10].reverse().map(s=>[s.name,s.mentions]))
+    + `<div class="ch ch-300" id="staffCh"></div>`;
+  chart('staffCh', {grid:{left:8,right:40,top:6,bottom:6,containLabel:true},
+    tooltip:Object.assign(baseTooltip(),{trigger:'item'}),
+    xAxis:axisY({splitLine:{lineStyle:{color:t.grid}}}),
+    yAxis:{type:'category', data:top10.map(s=>s.name), axisLine:{show:false}, axisTick:{show:false},
+      axisLabel:{color:t.ink2, fontSize:11.5, fontFamily:'Inter'}},
+    series:[{type:'bar', data:top10.map(s=>s.mentions), barMaxWidth:18,
+      itemStyle:{color:t.series[0], borderRadius:[0,4,4,0]},
+      label:{show:true, position:'right', color:t.ink2, fontSize:11, fontFamily:'Inter'}}],
+    animationDuration:500});
+  CH.staffCh?.on('click', prm=>{ const s=top10[prm.dataIndex]; if(s) crossFilter({staff:s.name}); });
+
+  $('staffTbl').innerHTML = `<thead><tr><th>#</th><th>Name</th><th class="num">Mentions</th><th>Location</th></tr></thead>
+    <tbody>${staff.map((s,i)=>`
+      <tr data-staff="${esc(s.name)}" style="cursor:pointer" title="View reviews mentioning ${esc(s.name)}">
+        <td><span class="rank">${i+1}</span></td>
+        <td style="font-weight:600">${esc(s.name)}${s.full&&s.full.toLowerCase()!==s.name.toLowerCase()?`<span style="font-weight:400;color:var(--ink-3);font-size:11.5px"> · ${esc(s.full)}</span>`:''}</td>
+        <td class="num">${fmtN(s.mentions)}</td><td style="color:var(--ink-2)">${esc(SHORT_LOC(s.loc))}</td></tr>`).join('')}</tbody>`;
+  $('staffTbl').querySelectorAll('[data-staff]').forEach(el=>
+    el.addEventListener('click',()=>crossFilter({staff:el.dataset.staff})));
+
+  renderNeedsReview(p);
+  bindTableToggles(root);
+}
+
+const REASON_LABEL = {unmatched:'unrecognized name', ambiguous:'shared name — unclear who', 'loc-unclear':'location unclear'};
+function renderNeedsReview(p){
+  const box = $('needsReview'); if(!box) return;
+  let nr = p.staffNeedsReview || [];
+  if(activeLoc!=='all') nr = nr.filter(x=>x.loc===activeLoc);
+  if(!nr.length){ box.innerHTML=''; return; }
+  const totalM = nr.reduce((s,x)=>s+x.mentions,0);
+  box.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title" style="color:var(--serious)">${ico('alert',14)} Needs review — unmatched staff names</span>
+        <span style="font-size:11.5px;color:var(--ink-3)">${nr.length} names · ${fmtN(totalM)} mentions not yet counted</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-bottom:12px">
+        These names in guest reviews don't match anyone in the staff roster yet — usually a nickname or spelling.
+        Add them to the person's <b>Aliases</b> field in the roster and they're counted automatically on the next update.
+      </div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto"><table class="tbl">
+        <thead><tr><th>Name in reviews</th><th class="num">Mentions</th><th>Why</th><th>Suggested match</th></tr></thead>
+        <tbody>${nr.map(x=>`
+          <tr>
+            <td style="font-weight:600">${esc(x.name)}</td>
+            <td class="num">${fmtN(x.mentions)}</td>
+            <td style="color:var(--ink-2)">${esc(REASON_LABEL[x.reason]||x.reason)}</td>
+            <td>${x.suggestion?`<span style="color:var(--good-text)">${esc(x.suggestion)}</span>`:'<span style="color:var(--ink-3)">—</span>'}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* ═══════════════ REVIEWS ═══════════════ */
+function reviewCutoff(){
+  if(activePeriod==='all') return null;
+  const days = {'7d':7,'30d':30,'90d':90,'180d':180,'365d':365}[activePeriod];
+  const ref = DATA.lastReviewAt ? new Date(DATA.lastReviewAt) : new Date();
+  return new Date(ref.getTime()-days*86400000).toISOString().slice(0,10);
+}
+function filteredReviews(){
+  const cutoff = reviewCutoff();
+  let list = DATA.recentReviews||[];
+  if(cutoff) list = list.filter(r=>r.date>=cutoff);
+  if(activeLoc!=='all') list = list.filter(r=>r.loc===activeLoc);
+  if(revF.sentiment) list = list.filter(r=>r.sentiment===revF.sentiment);
+  if(revF.source) list = list.filter(r=>r.source===revF.source);
+  if(revF.theme) list = list.filter(r=>r.theme===revF.theme);
+  if(revF.staff) list = list.filter(r=>(r.staffMentioned||'').split(',').map(s=>s.trim()).includes(revF.staff));
+  if(revF.unanswered) list = list.filter(r=>!r.responded && (r.rating||5)<=2);
+  if(revF.search){
+    const q = revF.search.toLowerCase();
+    list = list.filter(r=>(r.text||'').toLowerCase().includes(q) || (r.reviewer||'').toLowerCase().includes(q));
+  }
+  return list;
+}
+function renderReviews(){
+  const root = $('page-reviews');
+  root.innerHTML = `
+    <div class="rev-controls">
+      <div class="search-box">${ico('search',15)}<input id="revSearch" type="search" placeholder="Search reviews or guests…" value="${esc(revF.search)}"></div>
+      <button class="chip${!revF.sentiment&&!revF.unanswered?' active':''}" data-quick="all">All</button>
+      <button class="chip${revF.sentiment==='Positive'?' active':''}" data-quick="Positive">Positive</button>
+      <button class="chip${revF.sentiment==='Negative'?' active':''}" data-quick="Negative">Negative</button>
+      <button class="chip${revF.unanswered?' active':''}" data-quick="unanswered">Unanswered</button>
+      <span id="activeChips" style="display:inline-flex;gap:6px;flex-wrap:wrap"></span>
+    </div>
+    <div id="revCount" style="font-size:12px;color:var(--ink-3);margin-bottom:13px"></div>
+    <div id="revList"></div>`;
+
+  const chips=[];
+  if(revF.source) chips.push(['source', revF.source]);
+  if(revF.theme)  chips.push(['theme', revF.theme]);
+  if(revF.staff)  chips.push(['staff', '👤 '+revF.staff]);
+  $('activeChips').innerHTML = chips.map(([k,l])=>
+    `<button class="chip removable" data-clear="${k}">${esc(l)} ${ico('x',11)}</button>`).join('');
+  $('activeChips').querySelectorAll('[data-clear]').forEach(b=>b.addEventListener('click',()=>{
+    revF[b.dataset.clear]=null; renderReviews();
+  }));
+  root.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.dataset.quick;
+    revF.sentiment = (q==='Positive'||q==='Negative')?q:null;
+    revF.unanswered = q==='unanswered';
+    renderReviews();
+  }));
+  let debounce;
+  $('revSearch').addEventListener('input',e=>{
+    clearTimeout(debounce);
+    debounce = setTimeout(()=>{ revF.search=e.target.value.trim(); paintReviewList(); },200);
+  });
+  paintReviewList();
+}
+function paintReviewList(){
+  const list = filteredReviews();
+  const totalInPool = (DATA.recentReviews||[]).length;
+  $('revCount').textContent = `${list.length} review${list.length!==1?'s':''} shown · from the ${fmtN(totalInPool)} most recent`;
+  $('revList').innerHTML = list.length ? list.map(revCard).join('')
+    : '<div class="empty">No reviews match these filters in this period</div>';
+
+  $('revList').querySelectorAll('.rev-more').forEach(btn=>btn.addEventListener('click',()=>{
+    const tx = btn.closest('.rev-card').querySelector('.rev-text');
+    const c = tx.classList.toggle('clamp');
+    btn.textContent = c?'Show more':'Show less';
+  }));
+  $('revList').querySelectorAll('.ai-toggle').forEach(btn=>btn.addEventListener('click',()=>{
+    const box = btn.closest('.rev-card').querySelector('.rev-ai');
+    const show = !box.classList.contains('show');
+    box.classList.toggle('show', show);
+    btn.innerHTML = show ? `${ico('x',11)} Hide` : `${ico('spark',11)} AI summary`;
+  }));
+  $('revList').querySelectorAll('.b-staff').forEach(b=>b.addEventListener('click',()=>{
+    crossFilter({staff:b.dataset.n});
+  }));
+}
+function revCard(r){
+  const sentCls = r.sentiment==='Positive'?'b-pos':r.sentiment==='Negative'?'b-neg':r.sentiment==='Mixed'?'b-mix':'b-neu';
+  const long = (r.text||'').length>260;
+  const staffN = (r.staffMentioned||'').split(',').map(s=>s.trim()).filter(Boolean);
+  return `<div class="rev-card">
+    <div class="rev-head">
+      <div class="avatar" style="width:38px;height:38px;font-size:14px;background:${locColor(r.loc)}">${esc((r.reviewer||'G').charAt(0).toUpperCase())}</div>
+      <div class="rev-who"><div class="nm">${esc(r.reviewer||'Guest')}</div>
+        <div class="dt">${fmtDate(r.date)} · ${esc(SHORT_LOC(r.loc))}</div></div>
+      <div class="rev-stars">${stars(r.rating)}</div>
+    </div>
+    <div class="rev-text${long?' clamp':''}">${esc(r.text||'')}</div>
+    ${long?'<button class="rev-more">Show more</button>':''}
+    ${r.summary?`<div class="rev-ai"><div class="lbl">${ico('spark',11)} AI summary</div>${esc(r.summary)}</div>`:''}
+    ${r.ownerResponse?`<div class="rev-resp"><div class="lbl">Owner response</div>${esc(r.ownerResponse.slice(0,400))}${r.ownerResponse.length>400?'…':''}</div>`:''}
+    <div class="rev-badges">
+      <span class="badge b-${esc((r.source||'').toLowerCase())}">${esc(r.source||'')}</span>
+      ${r.sentiment?`<span class="badge ${sentCls}">${esc(r.sentiment)}</span>`:''}
+      ${(r.urgency&&r.urgency!=='None'&&r.urgency!=='Low')?`<span class="badge b-urg-${esc(r.urgency)}">${esc(r.urgency)} urgency</span>`:''}
+      ${staffN.map(n=>`<span class="badge b-staff" data-n="${esc(n)}">👤 ${esc(n)}</span>`).join('')}
+      <span style="margin-left:auto;display:inline-flex;gap:6px">
+        ${r.summary?`<button class="chip ai-toggle" style="padding:3px 10px;font-size:11px">${ico('spark',11)} AI summary</button>`:''}
+        ${r.url?`<a class="chip" style="padding:3px 10px;font-size:11px" href="${esc(r.url)}" target="_blank" rel="noopener">${ico('ext',11)} View</a>`:''}
+      </span>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════ THEME TOGGLE / BOOT ═══════════════ */
+function applyTheme(mode){
+  document.documentElement.dataset.theme = mode;
+  $('themeToggle').innerHTML = ico(mode==='dark'?'sun':'moon',17);
+  try{ localStorage.setItem('ri-theme', mode); }catch{}
+}
+function initTheme(){
+  let saved=null; try{ saved = localStorage.getItem('ri-theme'); }catch{}
+  const urlTheme = new URLSearchParams(location.search).get('theme');
+  const mode = urlTheme || saved || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  applyTheme(mode==='dark'?'dark':'light');
+  $('themeToggle').addEventListener('click',()=>{
+    applyTheme(isDark()?'light':'dark');
+    renderTab(activeTab);
+  });
+}
+function initBrand(){
+  document.title = `${BRAND.name} · ${BRAND.client}`;
+  $('brandName').textContent = BRAND.name;
+  $('brandTag').textContent = BRAND.tagline || '';
+  if(BRAND.logo){
+    $('brandLogo').src = BRAND.logo;
+    $('brandLogo').alt = BRAND.client;
+    $('brandSep').style.display='block';
+  } else {
+    $('brandLogo').style.display='none';
+  }
+  if(DATA.generatedAt){
+    const built = new Date(DATA.generatedAt);
+    $('updated').innerHTML = `${new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}<br>Updated ${built.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/New_York',timeZoneName:'short'})}`;
+  }
+  $('footer').innerHTML = `<b>${esc(BRAND.name)}</b> — review intelligence for ${esc(BRAND.client)} · built by ${esc(BRAND.builtBy)} · ${fmtN(DATA.network?.n||0)} reviews analyzed across ${(DATA.sources||[]).length} platforms`;
+}
+window.addEventListener('resize',()=>Object.values(CH).forEach(c=>c.resize()));
+document.addEventListener('DOMContentLoaded',()=>{
+  initTheme(); initBrand();
+  const hashTab = location.hash.replace('#','');
+  if(TABS.some(([id])=>id===hashTab)) activeTab = hashTab;
+  renderNav(); renderFilters(); updateScopeCount();
+  document.querySelector('#page-'+activeTab).classList.add('active');
+  renderTab(activeTab);
+});
+</script>
+</body>
+</html>

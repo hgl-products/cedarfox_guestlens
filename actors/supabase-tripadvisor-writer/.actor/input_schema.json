@@ -1,0 +1,46 @@
+{
+  "title": "Supabase TripAdvisor Review Writer",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "supabaseUrl": {
+      "title": "Supabase Project URL",
+      "type": "string",
+      "description": "https://<project-ref>.supabase.co for this client's Supabase project.",
+      "editor": "textfield"
+    },
+    "supabaseServiceKey": {
+      "title": "Supabase service_role Key",
+      "type": "string",
+      "description": "service_role key (bypasses RLS). Store only in the task's saved input.",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "apifyToken": {
+      "title": "Apify API Token",
+      "type": "string",
+      "description": "Apify account token. Required to look up the most recent scraper run and read its dataset.",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "scraperTaskId": {
+      "title": "Scraper Task ID",
+      "type": "string",
+      "description": "The client's scraper task this writer consumes. Used to auto-discover the latest SUCCEEDED run when datasetId is omitted.",
+      "editor": "textfield"
+    },
+    "datasetId": {
+      "title": "Apify Dataset ID (optional)",
+      "type": "string",
+      "description": "Explicit dataset to process (used for backfills). If omitted, the most recent successful scraper run is used.",
+      "editor": "textfield"
+    },
+    "testMode": {
+      "title": "Test Mode",
+      "type": "boolean",
+      "description": "If true, process only the first 5 items and print full debug output.",
+      "default": false
+    }
+  },
+  "required": []
+}

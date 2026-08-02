@@ -1,0 +1,8 @@
+{
+  "actorSpecification": 1,
+  "name": "supabase-google-writer",
+  "title": "Supabase Google Review Writer",
+  "description": "Reads Google Maps review data from an Apify dataset, resolves each review's location via CID, and inserts new rows into the client's Supabase reviews table (ON CONFLICT DO NOTHING dedup).",
+  "version": "0.1",
+  "buildTag": "latest"
+}

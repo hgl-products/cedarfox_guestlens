@@ -1,0 +1,15 @@
+{
+  "name": "supabase-google-writer",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/main.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "apify": "^3.0.0"
+  }
+}

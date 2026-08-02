@@ -1,0 +1,34 @@
+{
+  "title": "Review Analyzer (Supabase)",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "supabaseUrl": {
+      "title": "Supabase Project URL",
+      "type": "string",
+      "description": "https://<project-ref>.supabase.co for this client's Supabase project.",
+      "editor": "textfield"
+    },
+    "supabaseServiceKey": {
+      "title": "Supabase service_role Key",
+      "type": "string",
+      "description": "service_role key (bypasses RLS). Store only in the task's saved input.",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "anthropicApiKey": {
+      "title": "Anthropic API Key",
+      "type": "string",
+      "description": "Anthropic API key used to call Claude for review analysis.",
+      "editor": "textfield",
+      "isSecret": true
+    },
+    "testMode": {
+      "title": "Test Mode",
+      "type": "boolean",
+      "description": "If true, analyze only the first 5 reviews and print each Claude response.",
+      "default": false
+    }
+  },
+  "required": []
+}
