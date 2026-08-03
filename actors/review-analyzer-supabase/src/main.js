@@ -55,7 +55,10 @@ async function supaFetch(supabaseUrl, serviceKey, path, options = {}) {
       throw new Error(`Supabase ${options.method || 'GET'} ${path} → ${res.status}: ${text}`);
     }
     if (res.status === 204) return null;
-    return res.json();
+    // PostgREST returns 201 with an EMPTY body when Prefer: return=minimal —
+    // res.json() would throw "Unexpected end of JSON input" on it.
+    const body = await res.text();
+    return body ? JSON.parse(body) : null;
   }
   throw new Error(`Supabase request to ${path} failed after 5 attempts`);
 }
