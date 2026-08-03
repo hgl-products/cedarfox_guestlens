@@ -1,9 +1,10 @@
 # GuestLens — Cedar Fox Coffee Runbook (Supabase-native, client #2)
 
-Last updated: 2026-08-01 (end of session) · Status: **Phases 1–2 nearly done.
-⏭️ NEXT ACTION: Julian pastes Supabase URL + service_role key into all 4 Apify
-tasks (+ Anthropic key into the analyzer) via the direct links in "Component
-inventory" below, clicks SAVE on each — then run writers (testMode first).**
+Last updated: 2026-08-03 · Status: **🟢 FULLY LIVE — pipeline complete end-to-end.**
+243/243 reviews scraped→stored→AI-analyzed. Dashboard on GitHub Pages, nightly
+Apify schedules + GitHub Action active. Remaining (non-blocking): owner demo,
+staff roster after pilot, password protection when requested, Supabase Pro
+upgrade when client pays.
 
 This is the master reference for this client's deployment — the equivalent of
 TBC's SESSION_CONTEXT.md. To resume any session: share this file with Claude
@@ -162,23 +163,42 @@ password page works with 30-day remember.
 | supabase-yelp-writer | actor `8Gq6PKMfsBrtwmms1` / task `ycL76tVqPDld9oGdk` | ⏳ secrets: https://console.apify.com/actor-tasks/ycL76tVqPDld9oGdk/input |
 | supabase-tripadvisor-writer | actor `AsCbYuqVZ3r6W17Jh` / task `aUeSfdR58VJaLZi0V` | ⏳ secrets: https://console.apify.com/actor-tasks/aUeSfdR58VJaLZi0V/input |
 | review-analyzer-supabase | actor `CT2BDSJUhYdKeJzpX` / task `fIqvdviwnHsvPsRqH` | ⏳ secrets + Anthropic key: https://console.apify.com/actor-tasks/fIqvdviwnHsvPsRqH/input |
-| Schedules (5) | **not yet created** | after backfill: scrapers 18:00 ET, TA writer 18:20, Yelp 18:30, Google 18:35, analyzer 18:45 |
-| GitHub repo | **not yet created** | Pages + secrets + first push pending |
-| Dashboard URL | **not yet live** | local preview first (owner demo) |
+| Schedule: google-scraper 18:00 ET | `a2n3Drhicl7GnLecn` | daily, America/New_York |
+| Schedule: yelp-scraper 18:00 ET | `fHlYwfVVcirIy7D4n` | daily |
+| Schedule: ta-scraper 18:00 ET | `o4dpmXBenYbsB3ZNH` | daily |
+| Schedule: ta-writer 18:20 ET | `Uaisy5lwjiD12LQIi` | daily |
+| Schedule: yelp-writer 18:30 ET | `Y26KDa9fKQuGlQg0G` | daily |
+| Schedule: google-writer 18:35 ET | `BZSPbHI4h5nExCN2H` | daily |
+| Schedule: analyzer 18:45 ET | `xwd4BmbhZ5WSBUnLO` | daily |
+| GitHub repo | `Ranger-coder/cedarfox_guestlens` | secrets `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` set; workflow crons 23:15/00:05/01:37 UTC |
+| **Dashboard URL** | **https://ranger-coder.github.io/cedarfox_guestlens/** | no password (pilot); StatiCrypt step commented in workflow |
 
-**Each writer task has `apifyToken` prefilled+encrypted and its `scraperTaskId` set.
-Missing in ALL 4 tasks: `supabaseUrl`, `supabaseServiceKey` (Julian pastes + SAVE).
-Missing in analyzer only: `anthropicApiKey`.** Verify with the API check (secrets
-show "ENCRYPTED"); Julian's first attempt didn't save — must click Save on the
-task Input page, not "Run with input".
+## Work log — 2026-08-03 (launch day)
 
-**Remaining sequence after secrets:** (1) yelp-writer run with `testMode: true`
-override → check REPORT + rows in Supabase Table Editor · (2) full runs of all
-3 writers (expect ~243 rows) · (3) analyzer testMode → full run (~243 analyses,
-cents) · (4) local dashboard preview (needs SUPABASE_URL/SUPABASE_SERVICE_KEY
-in the terminal env) · (5) flip Google scraper task input to
-`reviewsStartDate: "1 day"` (Yelp/TA lower maxReviews) · (6) create 7 schedules ·
-(7) GitHub repo + Pages.
+- Secrets: Julian put SUPABASE_URL / SUPABASE_SERVICE_KEY / ANTHROPIC_API_KEY in
+  `~/.guestlens-cedarfox.env` (home dir, outside git). Claude saved them into all
+  4 Apify tasks via API (PUT task input — encrypts `isSecret` fields server-side).
+  Lesson: pasting in the Apify console UI twice failed to save; the API route is
+  reliable and verifiable (GET input → "ENCRYPTED").
+- Note: Julian's SUPABASE_URL initially included `/rest/v1/` — the code normalizes
+  it, but the canonical value is the bare project URL.
+- Writers verified: testMode 5 rows → dedup re-run 0 rows (ON CONFLICT proof) →
+  full runs 243/243, all 217 Google rows location-matched via CID.
+- **Bug found+fixed:** `supaFetch` in all 4 actors did `res.json()` on PostgREST's
+  empty 201 body (`Prefer: return=minimal`) → "Unexpected end of JSON input".
+  Fixed to read text-then-parse; re-pushed all 4. No data lost (`processed` flips
+  only after a successful analysis write).
+- Analyzer: testMode 5/5 → full run 238 remaining, 0 failures, **$0.42 total**.
+- Dashboard: logo bumped 30px→36px (+20%) at Julian's request. Preview approved.
+- Made permanent: scrapers flipped to incremental (Google `reviewsStartDate: "1 day"`
+  maxReviews 100; Yelp/TA max 50 — writers dedup anyway), 7 schedules created,
+  repo `cedarfox_guestlens` created + pushed, secrets set via API (pynacl sealed
+  box), Pages enabled, workflow_dispatch smoke test run.
+
+**Remaining / future:** owner demo + feedback · staff roster CSV after pilot
+(roster_import.py + CROSSWALK in client_config.py) · enable StatiCrypt password
+when requested (uncomment workflow step + add DASHBOARD_PASSWORD secret) ·
+Supabase Pro ($25/mo) when client pays · watch first scheduled night end-to-end.
 
 ## API quick reference
 
