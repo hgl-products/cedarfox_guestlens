@@ -170,8 +170,8 @@ password page works with 30-day remember.
 | Schedule: yelp-writer 18:30 ET | `Y26KDa9fKQuGlQg0G` | daily |
 | Schedule: google-writer 18:35 ET | `BZSPbHI4h5nExCN2H` | daily |
 | Schedule: analyzer 18:45 ET | `xwd4BmbhZ5WSBUnLO` | daily |
-| GitHub repo | `Ranger-coder/cedarfox_guestlens` | secrets `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` set; workflow crons 23:15/00:05/01:37 UTC |
-| **Dashboard URL** | **https://ranger-coder.github.io/cedarfox_guestlens/** | no password (pilot); StatiCrypt step commented in workflow |
+| GitHub repo | `hgl-products/cedarfox_guestlens` | secrets `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` set; workflow crons 23:15/00:05/01:37 UTC |
+| **Dashboard URL** | **https://hgl-products.github.io/cedarfox_guestlens/** | no password (pilot); StatiCrypt step commented in workflow |
 
 ## Work log — 2026-08-03 (launch day)
 
